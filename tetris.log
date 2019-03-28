@@ -1,0 +1,150 @@
+pr bewege_steine
+  farbe 7
+  zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
+  ;Prüfe ob stein aufliegt
+  (wenn (:steiny<24) [setze "steiny :steiny+1] [setze "steiny 0])
+  farbe :steintyp-1
+  zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
+ende
+
+pr bewegedreh
+  setze "st (stein_gedreht (item :steintyp :steine) (:steindreh+1)) 
+  wenn ((check_rand :st 0)=0) [  
+    farbe 7
+    zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
+    setze "steindreh (wenn (:steindreh>2) [0] [:steindreh + 1])
+    farbe :steintyp-1
+    zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
+  ]
+ende
+
+pr bewegex :richtung 
+;bei -1 und 5 anfangen rand zu checken
+;kleiner -3 und größer 7 sollte nicht möglich sein
+  setze "st (stein_gedreht (item :steintyp :steine) :steindreh)
+  (wenn (und (und (:steinx+:richtung> -4)(:steinx+:richtung< 8))((check_rand :st :richtung)=0)) [
+  farbe 7
+  zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
+  setze "steinx :steinx + :richtung
+  farbe :steintyp-1
+  zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
+  ])
+ende
+
+pr check_rand :stein :richtung
+  for [iy 1 4 1] [
+       (wenn (und(:steinx+:richtung>5)((item ((:iy-1)*4+4) :stein))=1) [Rückgabe 1])
+       (wenn (und(:steinx+:richtung>6)((item ((:iy-1)*4+3) :stein))=1) [Rückgabe 1])
+       (wenn (und(:steinx+:richtung>7)((item ((:iy-1)*4+2) :stein))=1) [Rückgabe 1])
+       (wenn (und(:steinx+:richtung<-1)((item ((:iy-1)*4+1) :stein))=1) [Rückgabe 1])
+       (wenn (und(:steinx+:richtung<-2)((item ((:iy-1)*4+2) :stein))=1) [Rückgabe 1])
+       (wenn (und(:steinx+:richtung<-3)((item ((:iy-1)*4+3) :stein))=1) [Rückgabe 1])
+    ]
+  Rückgabe 0
+ende
+
+pr definiere_steine
+  setze "steine [[0 0 0 0 
+                  0 1 1 0 
+                  0 1 1 0 
+                  0 0 0 0]
+                 [0 0 0 0 
+                  0 0 1 0 
+                  0 1 1 1 
+                  0 0 0 0]
+                 [0 0 0 0 
+                  0 1 1 0 
+                  0 0 1 1 
+                  0 0 0 0]
+                 [0 0 0 0 
+                  0 1 1 0 
+                  1 1 0 0 
+                  0 0 0 0]
+                 [0 0 0 0 
+                  0 1 0 0 
+                  0 1 1 1 
+                  0 0 0 0]
+                 [0 0 0 0 
+                  0 0 1 0 
+                  1 1 1 0 
+                  0 0 0 0]
+                 [0 0 0 0 
+                  0 0 0 0 
+                  1 1 1 1 
+                  0 0 0 0]
+                ]
+ende
+
+pr spielschleife
+  führeaus.solange [bewege_steine warte 30] [:stoppen=0] 
+
+ende
+
+pr stein_gedreht :stein :drehung
+  (wenn (:drehung=0) [Rückgabe :stein][
+  setze "zwi :stein 
+  wh :drehung [
+    setze "stein_neu [] 
+  for [iy 1 4 1] [
+    for [ix 1 4 1] [
+      queue "stein_neu (item ((4-:ix)*4+:iy) :zwi) 
+    ]
+    ]
+  setze "zwi :stein_neu
+  ]  
+  Rückgabe  :stein_neu
+  ])
+ende
+
+pr tasteneingabe
+  wenn :stoppen=1 [showturtle halt] 
+    keyboardon [tasteneingabe] setfocus [MSWLogo SCREEN] 
+    if keyboardvalue = ASCII "a [bewegex -1]  
+    if keyboardvalue = ASCII "d [bewegex 1] 
+    if keyboardvalue = ASCII "w [bewegedreh]
+    if keyboardvalue = ASCII "q [setze "stoppen 1]
+ende
+
+pr tetris
+  farbe 0
+  hideturtle
+  sh aufxy -300 100 re 90 sa
+  label [a:links  d:rechts] 
+  sh aufxy -300 80 sa
+  label [q:ende  w:dreh] 
+  sh li 90 aufxy 0 0 sa
+  setze "spielfeld (ARRAY (25*10) 0)
+  definiere_steine
+  setze "steinx 4
+  setze "steiny 0
+  setze "steindreh 0
+  setze "steintyp 7
+  setze "stoppen 0
+  zeichne_umgebung
+  tasteneingabe
+  spielschleife
+ende
+
+pr zeichne_stein :stein :posx :posy
+  sh
+  aufxy :posx*10 (25-:posy-4-4)*10
+  sa 
+  for [iy 1 4 1] [
+    sh rw 10 sa
+    for [ix 1 4 1] [
+      sh re 90 vw 10 li 90 sa
+      
+      wenn ((item ((:iy-1)*4 + :ix) :stein) = 1) [wh 4 [vw 10 re 90]] 
+    ]
+    sh re 90 rw 40 li 90 sa
+  ]
+  sh vw 40 sa
+ende
+
+pr zeichne_umgebung
+  sh rw 101 li 90 vw 1 re 90 sa
+  wh 2 [vw 252 re 90 vw 102 re 90 ]
+  sh vw 1 re 90 vw 1 li 90 sa
+
+ende
+
