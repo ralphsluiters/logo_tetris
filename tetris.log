@@ -1,15 +1,24 @@
 pr bewege_steine
   farbe 7
   zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
-  ;Prüfe ob stein aufliegt
-  (wenn (:steiny<24) [setze "steiny :steiny+1] [setze "steiny 0])
+  
+  (wenn ((check_kollision (stein_gedreht (item :steintyp :steine) :steindreh) :steinx (:steiny+1))=0) 
+    [setze "steiny :steiny+1
+    ] [
+      spielfeld_setze_stein
+      zeichne_spielfeldinhalt
+      setze "steintyp ((zz 7)+1)
+      setze "steinx 3
+      setze "steiny 2
+    ] )
+
   farbe :steintyp-1
   zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
 ende
 
 pr bewegedreh
   setze "st (stein_gedreht (item :steintyp :steine) (:steindreh+1)) 
-  wenn ((check_rand :st 0)=0) [  
+  wenn ((check_kollision :st :steinx :steiny)=0) [  
     farbe 7
     zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
     setze "steindreh (wenn (:steindreh>2) [0] [:steindreh + 1])
@@ -22,7 +31,7 @@ pr bewegex :richtung
 ;bei -1 und 5 anfangen rand zu checken
 ;kleiner -3 und größer 7 sollte nicht möglich sein
   setze "st (stein_gedreht (item :steintyp :steine) :steindreh)
-  (wenn (und (und (:steinx+:richtung> -4)(:steinx+:richtung< 8))((check_rand :st :richtung)=0)) [
+  (wenn (und (und (:steinx+:richtung> -4)(:steinx+:richtung< 8))((check_kollision :st (:steinx+:richtung) :steiny)=0)) [
   farbe 7
   zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
   setze "steinx :steinx + :richtung
@@ -31,17 +40,29 @@ pr bewegex :richtung
   ])
 ende
 
-pr check_rand :stein :richtung
+pr check_kollision :stein :neux :neuy
   for [iy 1 4 1] [
-       (wenn (und(:steinx+:richtung>5)((item ((:iy-1)*4+4) :stein))=1) [Rückgabe 1])
-       (wenn (und(:steinx+:richtung>6)((item ((:iy-1)*4+3) :stein))=1) [Rückgabe 1])
-       (wenn (und(:steinx+:richtung>7)((item ((:iy-1)*4+2) :stein))=1) [Rückgabe 1])
-       (wenn (und(:steinx+:richtung<-1)((item ((:iy-1)*4+1) :stein))=1) [Rückgabe 1])
-       (wenn (und(:steinx+:richtung<-2)((item ((:iy-1)*4+2) :stein))=1) [Rückgabe 1])
-       (wenn (und(:steinx+:richtung<-3)((item ((:iy-1)*4+3) :stein))=1) [Rückgabe 1])
+       (wenn (und(:neux>5)((item ((:iy-1)*4+4) :stein))=1) [Rückgabe 1])
+       (wenn (und(:neux>6)((item ((:iy-1)*4+3) :stein))=1) [Rückgabe 1])
+       (wenn (und(:neux>7)((item ((:iy-1)*4+2) :stein))=1) [Rückgabe 1])
+       (wenn (und(:neux<-1)((item ((:iy-1)*4+1) :stein))=1) [Rückgabe 1])
+       (wenn (und(:neux<-2)((item ((:iy-1)*4+2) :stein))=1) [Rückgabe 1])
+       (wenn (und(:neux<-3)((item ((:iy-1)*4+3) :stein))=1) [Rückgabe 1])
     ]
+
+  for [ix 1 4 1] [
+       (wenn (und(:neuy>23)((item (3*4+:ix) :stein))=1) [Rückgabe 1])
+       (wenn (und(:neuy>24)((item (2*4+:ix) :stein))=1) [Rückgabe 1])
+       (wenn (und(:neuy>25)((item (1*4+:ix) :stein))=1) [Rückgabe 1])
+       (wenn (und((spielfeld_wert :neux+:ix+1 :neuy+2)>0)((item (3*4+:ix) :stein))=1) [Rückgabe 1])
+       (wenn (und((spielfeld_wert :neux+:ix+1 :neuy+1)>0)((item (2*4+:ix) :stein))=1) [Rückgabe 1])
+       (wenn (und((spielfeld_wert :neux+:ix+1 :neuy  )>0)((item (1*4+:ix) :stein))=1) [Rückgabe 1])
+       (wenn (und((spielfeld_wert :neux+:ix+1 :neuy-1)>0)((item (0*4+:ix) :stein))=1) [Rückgabe 1])
+
+    ]
+
   Rückgabe 0
-ende
+ende 
 
 pr definiere_steine
   setze "steine [[0 0 0 0 
@@ -75,6 +96,30 @@ pr definiere_steine
                 ]
 ende
 
+pr spielfeld_setze_stein
+  setze "zwi (stein_gedreht (item :steintyp :steine) :steindreh) 
+  for [iy 1 4 1] [
+    for [ix 1 4 1] [
+      setze "wert (item ((:iy-1)*4+:ix) :zwi)
+      (wenn (:wert>0) [spielfeld_wert_setzen (:steinx+:ix+1) (:steiny+:iy-2) (:steintyp)])
+    ]
+  ]
+ende
+
+pr spielfeld_wert :x :y
+  (wenn (:y<1) [Rückgabe 0])
+  (wenn (:y>25) [Rückgabe 1])
+  (wenn (OR (:x<1) (:x>10)) [Rückgabe 1])
+  Rückgabe (item ((:y-1)*10+:x) :spielfeld)
+ende
+
+pr spielfeld_wert_setzen :x :y :wert
+  (wenn (:y<1) [rk])
+  (wenn (:y>25) [rk])
+  (wenn (OR (:x<1) (:x>10)) [rk])
+  setitem ((:y-1)*10+:x) :spielfeld :wert
+ende
+
 pr spielschleife
   führeaus.solange [bewege_steine warte 30] [:stoppen=0] 
 
@@ -96,6 +141,11 @@ pr stein_gedreht :stein :drehung
   ])
 ende
 
+pr t
+  bild
+  tetris
+ende
+
 pr tasteneingabe
   wenn :stoppen=1 [showturtle halt] 
     keyboardon [tasteneingabe] setfocus [MSWLogo SCREEN] 
@@ -113,16 +163,48 @@ pr tetris
   sh aufxy -300 80 sa
   label [q:ende  w:dreh] 
   sh li 90 aufxy 0 0 sa
-  setze "spielfeld (ARRAY (25*10) 0)
+  setze "spielfeld (ARRAY 25*10 1)
+  for [i 1 25*10 1] [setitem :i :spielfeld 0]
+  
+  ; Zum testen
+  setitem 243 :spielfeld 4
+  setitem 244 :spielfeld 4
+  setitem 233 :spielfeld 2
+  setitem 234 :spielfeld 3
+  setitem 223 :spielfeld 2
+  setitem 224 :spielfeld 1
+  setitem 213 :spielfeld 1
+  setitem 214 :spielfeld 1
+  setitem 203 :spielfeld 1
+  setitem 193 :spielfeld 1
+
   definiere_steine
-  setze "steinx 4
-  setze "steiny 0
+  setze "steinx 3
+  setze "steiny 2
   setze "steindreh 0
-  setze "steintyp 7
+  setze "steintyp 6
   setze "stoppen 0
   zeichne_umgebung
+  zeichne_spielfeldinhalt
   tasteneingabe
   spielschleife
+ende
+
+pr zeichne_spielfeldinhalt
+  sh
+  aufxy (-1*10) 15*10
+  sa 
+  for [iy 1 25 1] [
+    sh rw 10 sa
+    for [ix 1 10 1] [
+      sh re 90 vw 10 li 90 sa
+      setze "steinfarbe (item ((:iy-1)*10 + :ix) :spielfeld) 
+      füllfarbe (wenn (:steinfarbe=0) [7][:steinfarbe - 1])
+      bb 9 9
+    ]
+    sh re 90 rw 100 li 90 sa
+  ]
+  sh vw 250 sa
 ende
 
 pr zeichne_stein :stein :posx :posy
@@ -148,3 +230,15 @@ pr zeichne_umgebung
 
 ende
 
+setze "spielfeld {0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 2 1 0 0 0 0 6 0 0 0 2 3 0 0 0 0 6 0 0 0 4 4 0 0 0 0 6 6}
+setze "st [0 0 0 0 0 1 1 1 0 1 0 0 0 0 0 0]
+setze "stein_neu [0 0 0 0 0 0 1 0 0 1 1 0 0 1 0 0]
+setze "steindreh 1
+setze "steine [[0 0 0 0 0 1 1 0 0 1 1 0 0 0 0 0] [0 0 0 0 0 0 1 0 0 1 1 1 0 0 0 0] [0 0 0 0 0 1 1 0 0 0 1 1 0 0 0 0] [0 0 0 0 0 1 1 0 1 1 0 0 0 0 0 0] [0 0 0 0 0 1 0 0 0 1 1 1 0 0 0 0] [0 0 0 0 0 0 1 0 1 1 1 0 0 0 0 0] [0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0]]
+setze "steinfarbe 6
+setze "steintyp 3
+setze "steinx 3
+setze "steiny 4
+setze "stoppen 1
+setze "wert 0
+setze "zwi [0 0 0 0 0 0 1 0 0 1 1 0 0 1 0 0]
