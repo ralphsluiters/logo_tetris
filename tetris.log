@@ -32,7 +32,7 @@ pr bewegerichtung :richtungx :richtungy
 ;bei -1 und 5 anfangen rand zu checken
 ;kleiner -3 und größer 7 sollte nicht möglich sein
   setze "st (stein_gedreht (item :steintyp :steine) :steindreh)
-  (wenn (und (und (:steinx+:richtungx> -4)(:steinx+:richtungx< 8))((check_kollision :st (:steinx+:richtungx) (:steiny+:richtungy))=0)) [
+  (wenn (und (und (:steinx+:richtungx> -4)(:steinx+:richtungx< (:spielfeldbreite-2)))((check_kollision :st (:steinx+:richtungx) (:steiny+:richtungy))=0)) [
     farbe 7
     zeichne_stein (stein_gedreht (item :steintyp :steine) :steindreh) :steinx :steiny
     setze "steinx :steinx + :richtungx
@@ -100,15 +100,15 @@ ende
 pr spielfeld_wert :x :y
   (wenn (:y<1) [Rückgabe 0])
   (wenn (:y>25) [Rückgabe 1])
-  (wenn (OR (:x<1) (:x>10)) [Rückgabe 1])
-  Rückgabe (item ((:y-1)*10+:x) :spielfeld)
+  (wenn (OR (:x<1) (:x>:spielfeldbreite)) [Rückgabe 1])
+  Rückgabe (item ((:y-1)*:spielfeldbreite+:x) :spielfeld)
 ende
 
 pr spielfeld_wert_setzen :x :y :wert
   (wenn (:y<1) [rk])
   (wenn (:y>25) [rk])
-  (wenn (OR (:x<1) (:x>10)) [rk])
-  setitem ((:y-1)*10+:x) :spielfeld :wert
+  (wenn (OR (:x<1) (:x>:spielfeldbreite)) [rk])
+  setitem ((:y-1)*:spielfeldbreite+:x) :spielfeld :wert
 ende
 
 pr spielschleife
@@ -147,6 +147,8 @@ pr tasteneingabe
 ende
 
 pr tetris
+  setze "spielfeldbreite 10
+
   farbe 0
   hideturtle
   sh aufxy -300 100 re 90 sa
@@ -154,8 +156,8 @@ pr tetris
   sh aufxy -300 80 sa
   label [q:ende  w:dreh] 
   sh li 90 aufxy 0 0 sa
-  setze "spielfeld (ARRAY 25*10 1)
-  for [i 1 25*10 1] [setitem :i :spielfeld 0]
+  setze "spielfeld (ARRAY (25*:spielfeldbreite) 1)
+  for [i 1 (25*:spielfeldbreite) 1] [setitem :i :spielfeld 0]
   
   definiere_steine
   setze "steinx 3
@@ -175,13 +177,13 @@ pr zeichne_spielfeldinhalt
   sa 
   for [iy 1 25 1] [
     sh rw 10 sa
-    for [ix 1 10 1] [
+    for [ix 1 :spielfeldbreite 1] [
       sh re 90 vw 10 li 90 sa
-      setze "steinfarbe (item ((:iy-1)*10 + :ix) :spielfeld) 
+      setze "steinfarbe (item ((:iy-1)*:spielfeldbreite + :ix) :spielfeld) 
       füllfarbe (wenn (:steinfarbe=0) [7][:steinfarbe - 1])
       bb 9 9
     ]
-    sh re 90 rw 100 li 90 sa
+    sh re 90 rw (10*:spielfeldbreite) li 90 sa
   ]
   sh vw 250 sa
 ende
@@ -204,7 +206,7 @@ ende
 
 pr zeichne_umgebung
   sh rw 101 li 90 vw 1 re 90 sa
-  wh 2 [vw 252 re 90 vw 102 re 90 ]
+  wh 2 [vw 252 re 90 vw ((10*:spielfeldbreite)+2) re 90 ]
   sh vw 1 re 90 vw 1 li 90 sa
 
 ende
@@ -213,12 +215,12 @@ pr zeilen_loeschen
   wh 4 [
   for [iy 1 25 1] [
     setze "anz 0
-    for [ix 1 10 1] [
+    for [ix 1 :spielfeldbreite 1] [
       (wenn ((spielfeld_wert :ix :iy) >0) [setze "anz :anz+1])
     ]
-    (wenn (:anz>9) [
+    (wenn (:anz >= :spielfeldbreite) [
       for [iiy (:iy-1) 1 -1] [
-        for [iix 1 10 1] [
+        for [iix 1 :spielfeldbreite 1] [
           spielfeld_wert_setzen :iix (:iiy+1) (spielfeld_wert :iix :iiy)
         ]
       ]
@@ -227,16 +229,17 @@ pr zeilen_loeschen
   ]
 ende
 
-setze "anz 8
-setze "spielfeld {0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 7 7 7 7 0 0 0 0 1 1 0 1 1 0 0 0 0 4 1 1 4 1 1 0 0 0 2 4 4 4 4 4 5 3 3 0 0 5 0 4 4 1 1 6 6 0 0 5 0 0 4 1 1 0 6 0 0 3 0 3 3 0 6 4 6 0 3 3 1 4 3 3 6 4 4 0 3 0 1 4 4 7 6 6 4 0}
-setze "st [0 0 0 0 0 1 1 0 0 0 1 1 0 0 0 0]
-setze "stein_neu [0 0 1 0 0 0 1 0 0 1 1 0 0 0 0 0]
-setze "steindreh 0
+setze "anz 13
+setze "spielfeld {0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0 4 0 0 0 0 0 0 7 0 0 0 0 0 0 0 0 0 0 6 0 4 4 0 0 0 0 0 7 0 0 0 0 0 0 0 6 1 1 6 6 6 4 2 0 0 2 0 7 5 0 0 1 1}
+setze "spielfeldbreite 20
+setze "st [0 1 0 0 0 1 1 0 0 0 1 0 0 0 0 0]
+setze "stein_neu [0 1 0 0 0 1 1 0 0 0 1 0 0 0 0 0]
+setze "steindreh 1
 setze "steine [[0 0 0 0 0 1 1 0 0 1 1 0 0 0 0 0] [0 0 0 0 0 0 1 0 0 1 1 1 0 0 0 0] [0 0 0 0 0 1 1 0 0 0 1 1 0 0 0 0] [0 0 0 0 0 1 1 0 1 1 0 0 0 0 0 0] [0 0 0 0 0 1 0 0 0 1 1 1 0 0 0 0] [0 0 0 0 0 0 1 0 1 1 1 0 0 0 0 0] [0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0]]
-setze "steinfarbe 0
-setze "steintyp 7
+setze "steinfarbe 1
+setze "steintyp 4
 setze "steinx 3
-setze "steiny 12
+setze "steiny 3
 setze "stoppen 1
 setze "wert 0
-setze "zwi [0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0]
+setze "zwi [0 1 0 0 0 1 1 0 0 0 1 0 0 0 0 0]
